@@ -7,24 +7,22 @@ app.use(express.json());
 app.get("", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Products fetched successfully",
+    message: "Users fetched successfully",
     data: [
       {
         id: 1,
-        name: "Laptop",
-        price: 50000,
+        name: "Nitesh",
       },
       {
         id: 2,
-        name: "Keyboard",
-        price: 2000,
+        name: "Rahul",
       },
     ],
   });
 });
 
-const PORT = 6000;
+const PORT = 7000;
 
 app.listen(PORT, () => {
-  console.log(`Backend service running on port ${PORT}`);
+  console.log(`User service running on port ${PORT}`);
 });

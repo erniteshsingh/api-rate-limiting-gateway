@@ -1,9 +1,17 @@
 import express from "express";
-import proxy from "./gateway/proxy.js";
+import logger from "./middleware/logger.js";
+
+import validateRequest from "./middleware/validation.js";
+import authenticate from "./middleware/auth.js";
+import authorizeAdmin from "./middleware/authorization.js";
+import gatewayRoutes from "./routes/gatewayRoutes.js";
 
 const app = express();
 
 app.use(express.json());
+
+app.use(logger);
+app.use(validateRequest);
 
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -11,7 +19,13 @@ app.get("/health", (req, res) => {
     message: "API Rate Limiting Gateway is running",
   });
 });
+app.get("/api/admin", authorizeAdmin, (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: "Welcome to admin area",
+    });
+  });
 
-app.use("/api", proxy);
+app.use("/api", authenticate, gatewayRoutes);
 
 export default app;
