@@ -5,6 +5,7 @@ import validateRequest from "./middleware/validation.js";
 import authenticate from "./middleware/auth.js";
 import authorizeAdmin from "./middleware/authorization.js";
 import gatewayRoutes from "./routes/gatewayRoutes.js";
+import errorHandler from "./middleware/errorhandler.js";
 
 const app = express();
 
@@ -20,12 +21,13 @@ app.get("/health", (req, res) => {
   });
 });
 app.get("/api/admin", authorizeAdmin, (req, res) => {
-    res.status(200).json({
-      success: true,
-      message: "Welcome to admin area",
-    });
+  res.status(200).json({
+    success: true,
+    message: "Welcome to admin area",
   });
+});
 
 app.use("/api", authenticate, gatewayRoutes);
 
+app.use(errorHandler);
 export default app;

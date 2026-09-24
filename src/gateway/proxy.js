@@ -1,20 +1,19 @@
 import { createProxyMiddleware } from "http-proxy-middleware";
+import { sendError } from "../utils/response.js";
+import services from "../config/services.js";
 
 const handleProxyError = (serviceName) => {
   return (error, req, res) => {
     console.error(`${serviceName} error:`, error.message);
 
     if (!res.headersSent) {
-      res.status(502).json({
-        success: false,
-        message: `${serviceName} unavailable`,
-      });
+      return sendError(res, 502, `${serviceName} unavailable`);
     }
   };
 };
 
 const productProxy = createProxyMiddleware({
-  target: process.env.PRODUCT_SERVICE_URL,
+  target: services.products.url,
   changeOrigin: true,
 
   on: {
@@ -23,7 +22,7 @@ const productProxy = createProxyMiddleware({
 });
 
 const userProxy = createProxyMiddleware({
-  target: process.env.USER_SERVICE_URL,
+  target: services.users.url,
   changeOrigin: true,
 
   on: {
@@ -31,4 +30,13 @@ const userProxy = createProxyMiddleware({
   },
 });
 
-export { productProxy, userProxy };
+const orderProxy = createProxyMiddleware({
+  target: services.orders.url,
+  changeOrigin: true,
+
+  on: {
+    error: handleProxyError("Order service"),
+  },
+});
+
+export { productProxy, userProxy, orderProxy };

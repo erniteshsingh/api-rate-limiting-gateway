@@ -1,3 +1,5 @@
+import { sendError } from "../utils/response.js";
+
 const validateRequest = (req, res, next) => {
   const { page, limit } = req.query;
 
@@ -5,10 +7,7 @@ const validateRequest = (req, res, next) => {
     const pageNumber = Number(page);
 
     if (!Number.isInteger(pageNumber) || pageNumber <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Page must be a positive integer",
-      });
+      return sendError(res, 400, "Page must be a positive integer");
     }
   }
 
@@ -16,10 +15,7 @@ const validateRequest = (req, res, next) => {
     const limitNumber = Number(limit);
 
     if (!Number.isInteger(limitNumber) || limitNumber <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: "Limit must be a positive integer",
-      });
+      return sendError(res, 400, "Limit must be a positive integer");
     }
   }
 
