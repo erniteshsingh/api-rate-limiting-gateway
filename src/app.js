@@ -5,6 +5,7 @@ import validateRequest from "./middleware/validation.js";
 import authenticate from "./middleware/auth.js";
 import authorizeAdmin from "./middleware/authorization.js";
 import gatewayRoutes from "./routes/gatewayRoutes.js";
+import rateLimiter from "./middleware/rateLimeter.js";
 import errorHandler from "./middleware/errorhandler.js";
 
 const app = express();
@@ -27,7 +28,7 @@ app.get("/api/admin", authorizeAdmin, (req, res) => {
   });
 });
 
-app.use("/api", authenticate, gatewayRoutes);
+app.use("/api", authenticate, rateLimiter, gatewayRoutes);
 
 app.use(errorHandler);
 export default app;
