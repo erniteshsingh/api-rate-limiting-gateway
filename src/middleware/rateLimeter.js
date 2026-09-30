@@ -1,44 +1,114 @@
-const buckets = new Map();
+import redis from "../config/redis.js";
 
-const BUCKET_CAPACITY = 5;
-const REFILL_RATE = 1;
+const BUCKET_CAPACITY = Number(process.env.RATE_LIMIT_CAPACITY);
+const REFILL_RATE = Number(process.env.RATE_LIMIT_REFILL_RATE);
+const BUCKET_TTL = Number(process.env.RATE_LIMIT_TTL);
 
-const rateLimiter = (req, res, next) => {
-  const apiKey = req.headers["x-api-key"];
-  const currentTime = Date.now();
+const rateLimiterScript = `
+  local tokens = redis.call("HGET", KEYS[1], "tokens")
+  local lastRefillTime = redis.call("HGET", KEYS[1], "lastRefillTime")
 
-  let bucket = buckets.get(apiKey);
+  local capacity = tonumber(ARGV[1])
+  local refillRate = tonumber(ARGV[2])
+  local currentTime = tonumber(ARGV[3])
+  local bucketTTL = tonumber(ARGV[4])
 
-  if (!bucket) {
-    bucket = {
-      tokens: BUCKET_CAPACITY,
-      lastRefillTime: currentTime,
-    };
-  }
+  if not tokens then
+    tokens = capacity
+    lastRefillTime = currentTime
+  else
+    tokens = tonumber(tokens)
+    lastRefillTime = tonumber(lastRefillTime)
 
-  const elapsedTime = (currentTime - bucket.lastRefillTime) / 1000;
+    local elapsedTime =
+      (currentTime - lastRefillTime) / 1000
 
-  const newTokens = elapsedTime * REFILL_RATE;
+    local newTokens =
+      elapsedTime * refillRate
 
-  bucket.tokens = Math.min(BUCKET_CAPACITY, bucket.tokens + newTokens);
+    tokens = math.min(
+      capacity,
+      tokens + newTokens
+    )
 
-  bucket.lastRefillTime = currentTime;
+    lastRefillTime = currentTime
+  end
 
-  if (bucket.tokens < 1) {
-    buckets.set(apiKey, bucket);
+  if tokens < 1 then
+    redis.call(
+      "HSET",
+      KEYS[1],
+      "tokens",
+      tokens,
+      "lastRefillTime",
+      lastRefillTime
+    )
 
-    return res.status(429).json({
+    redis.call(
+      "EXPIRE",
+      KEYS[1],
+      bucketTTL
+    )
+
+    return 0
+  end
+
+  tokens = tokens - 1
+
+  redis.call(
+    "HSET",
+    KEYS[1],
+    "tokens",
+    tokens,
+    "lastRefillTime",
+    lastRefillTime
+  )
+
+  redis.call(
+    "EXPIRE",
+    KEYS[1],
+    bucketTTL
+  )
+
+  return 1
+`;
+
+const rateLimiter = async (req, res, next) => {
+  try {
+    const apiKey = req.headers["x-api-key"];
+
+    const currentTime = Date.now();
+
+    const key = `rate_limit:${apiKey}`;
+
+    const result = await redis.eval(
+      rateLimiterScript,
+      1,
+      key,
+      BUCKET_CAPACITY,
+      REFILL_RATE,
+      currentTime,
+      BUCKET_TTL,
+    );
+
+    if (result === 0) {
+      return res.status(429).json({
+        success: false,
+        message: "Too many requests",
+        statusCode: 429,
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("Rate limiter error:", error.message);
+
+    return res.status(500).json({
       success: false,
-      message: "Too many requests",
-      statusCode: 429,
+      message: "Rate limiter error",
+      statusCode: 500,
     });
   }
-
-  bucket.tokens -= 1;
-
-  buckets.set(apiKey, bucket);
-
-  next();
 };
 
 export default rateLimiter;
