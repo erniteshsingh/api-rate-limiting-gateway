@@ -1,7 +1,6 @@
 import redis from "../config/redis.js";
+import { sendError } from "../utils/response.js";
 
-const BUCKET_CAPACITY = Number(process.env.RATE_LIMIT_CAPACITY);
-const REFILL_RATE = Number(process.env.RATE_LIMIT_REFILL_RATE);
 const BUCKET_TTL = Number(process.env.RATE_LIMIT_TTL);
 
 const rateLimiterScript = `
@@ -75,39 +74,33 @@ const rateLimiterScript = `
 
 const rateLimiter = async (req, res, next) => {
   try {
-    const apiKey = req.headers["x-api-key"];
+    const client = req.client;
+
+    const { capacity, refillRate } = client.rateLimit;
 
     const currentTime = Date.now();
 
-    const key = `rate_limit:${apiKey}`;
+    const key = `rate_limit:${client._id}`;
 
     const result = await redis.eval(
       rateLimiterScript,
       1,
       key,
-      BUCKET_CAPACITY,
-      REFILL_RATE,
+      capacity,
+      refillRate,
       currentTime,
       BUCKET_TTL,
     );
 
     if (result === 0) {
-      return res.status(429).json({
-        success: false,
-        message: "Too many requests",
-        statusCode: 429,
-      });
+      return sendError(res, 429, "Too many requests");
     }
 
     next();
   } catch (error) {
     console.error("Rate limiter error:", error.message);
 
-    return res.status(500).json({
-      success: false,
-      message: "Rate limiter error",
-      statusCode: 500,
-    });
+    return sendError(res, 500, "Rate limiter error");
   }
 };
 
