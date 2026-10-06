@@ -2,6 +2,8 @@ import { createProxyMiddleware } from "http-proxy-middleware";
 import { sendError } from "../utils/response.js";
 import services from "../config/services.js";
 
+import { canRequest, recordFailure, recordSuccess } from "./circuitBreaker.js";
+
 const GATEWAY_TIMEOUT = Number(process.env.GATEWAY_TIMEOUT);
 
 const MAX_RETRIES = Number(process.env.MAX_RETRIES);
@@ -30,6 +32,8 @@ const createServiceProxy = (serviceName, target) => {
       return;
     }
 
+    recordFailure(serviceName);
+
     if (!res.headersSent) {
       return sendError(res, 502, `${serviceName} unavailable`);
     }
@@ -42,10 +46,24 @@ const createServiceProxy = (serviceName, target) => {
 
     on: {
       error: handleProxyError,
+
+      proxyRes: (proxyRes) => {
+        if (proxyRes.statusCode >= 200 && proxyRes.statusCode < 500) {
+          recordSuccess(serviceName);
+        }
+      },
     },
   });
 
-  return proxy;
+  return (req, res, next) => {
+    if (!canRequest(serviceName)) {
+      console.log(`${serviceName}: circuit OPEN, request blocked`);
+
+      return sendError(res, 503, `${serviceName} temporarily unavailable`);
+    }
+
+    proxy(req, res, next);
+  };
 };
 
 const productProxy = createServiceProxy(

@@ -25,6 +25,13 @@ app.get("", (req, res) => {
   });
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    service: "order-service",
+  });
+});
+
 const PORT = 8000;
 
 app.listen(PORT, () => {
