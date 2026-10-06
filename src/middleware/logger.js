@@ -1,12 +1,16 @@
 const logger = (req, res, next) => {
-  console.log("2. Logger middleware");
   const startTime = Date.now();
 
   res.on("finish", () => {
     const duration = Date.now() - startTime;
 
+    const clientName = req.client?.name || "anonymous";
+
+    const logLevel =
+      res.statusCode >= 500 ? "ERROR" : res.statusCode >= 400 ? "WARN" : "INFO";
+
     console.log(
-      `${req.method}method ${req.originalUrl}url → ${res.statusCode}code → ${duration}ms`,
+      `[${logLevel}] [${req.method}] ${req.originalUrl} → ${res.statusCode} → ${duration}ms → client: ${clientName}`,
     );
   });
 
