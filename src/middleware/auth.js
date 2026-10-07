@@ -15,7 +15,7 @@ const authenticate = async (req, res, next) => {
     const client = await Client.findOne({ apiKeyHash });
 
     if (!client) {
-      return sendError(res, 401, "Invalid API key");
+      return sendError(res, 401, "Invalid API key ");
     }
 
     if (client.status !== "active") {
