@@ -11,7 +11,11 @@ import errorHandler from "./middleware/errorhandler.js";
 
 const app = express();
 
-app.use(express.json());
+app.use(
+  express.json({
+    limit: "100kb",
+  }),
+);
 
 app.use(logger);
 app.use(validateRequest);
