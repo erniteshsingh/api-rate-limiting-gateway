@@ -6,7 +6,7 @@ import rateLimits from "../config/rateLimits.js";
 
 const router = express.Router();
 
-router.post("/clients", async (req, res) => {
+router.post("/clients",authorizeAdmin, async (req, res) => {
   try {
     const { name, plan = "free" } = req.body;
 
