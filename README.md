@@ -37,6 +37,8 @@ This project is being built step-by-step to understand how a real-world API Gate
 * [Phase 4 — Redis-Based Rate Limiter](#phase-4--redis-based-rate-limiter)
 * [Phase 5 — API Keys & Client Management](#phase-5--api-keys--client-management)
 * [Phase 6 — Advanced Gateway Features](#phase-6--advanced-gateway-features)
+* [Phase 7: Security & Reliability Review](#Phase-7--Security-Reliability-Review)
+* [phase 8:Manual Testing & Verification](#phase-8--Manual-Testing-Verification)
 * [Current Architecture](#current-architecture)
 * [Current Request Pipeline](#current-request-pipeline)
 * [Security](#security)
@@ -2228,4 +2230,67 @@ Client Management
 API Key Revocation
 ```
 
-Phase 7 will be introduced gradually, with each new security or reliability component understood before implementation.
+#Phase 7: Security & Reliability Review:
+This phase focused on reviewing the gateway's existing security and reliability behavior without adding unnecessary production-level complexity.
+
+Completed
+
+Reviewed API key validation and handling.
+
+Verified that client API keys are stored as SHA-256 hashes rather than raw keys.
+
+Added a JSON request body size limit of 100 KB.
+
+Implemented a clean 413 Payload Too Large response for oversized request bodies.
+
+Reviewed logging to avoid exposing sensitive information, including raw API keys.
+
+Reviewed authentication protection for admin endpoints.
+
+Deferred
+
+Explicit Helmet/security-header configuration was skipped for the current learning scope.
+
+CORS configuration was deferred until frontend integration.
+
+#Phase 8: Manual Testing & Verification
+
+This phase focused on verifying the gateway's core behavior through manual API requests.
+
+Scenarios Verified
+
+Valid, missing, invalid, and revoked client API keys.
+
+Admin API key authentication and rejection of unauthorized admin requests.
+
+Rate limiting and 429 Too Many Requests responses.
+
+Token bucket refill behavior.
+
+Independent rate limits for different clients.
+
+Request proxying to the product service.
+
+Upstream timeout and retry behavior.
+
+Circuit breaker behavior.
+
+Gateway and upstream health checks.
+
+Oversized request body handling.
+
+API key handling and sensitive logging review.
+
+Testing Scope
+
+Testing was performed manually during development using API requests. An automated test suite and load testing were intentionally excluded from the current learning-project scope.
+
+The goal was to verify the main gateway behaviors and understand how authentication, rate limiting, and upstream reliability work together.
+
+Current Project Status
+
+Completed: Phases 0–8
+
+The gateway currently demonstrates API key authentication, client management, plan-based rate limiting, Redis-backed token bucket logic, request proxying, request validation, upstream timeout and retry handling, circuit breaking, and basic security and reliability checks.
+
+Intentionally out of scope for now: Automated testing, load testing, frontend integration, advanced security headers, and additional production-grade features.
